@@ -22,7 +22,10 @@
     </style>
 </head>
 <body>
+
+    <!-- DEZE ELEMENTEN STAAN NU ERALTIJD EN KUNNEN NIET MEER VERDWIJNEN -->
     <h1 id="main-title">📖 My Public Diary</h1>
+
     <div id="write-panel" class="admin-panel">
         <h3>✍️ Write a New Entry</h3>
         <div id="token-box" class="token-setup">
@@ -34,15 +37,20 @@
         <textarea id="entry-body" class="input-field" placeholder="Write your thoughts here..."></textarea>
         <button class="btn" id="save-btn" onclick="saveToGitHub()">Publish Online</button>
     </div>
+
     <input type="text" id="search-input" class="search-bar" placeholder="🔍 Search diary titles..." oninput="filterEntries()">
+    
     <div id="diary-container">Loading entries from GitHub...</div>
+
     <script>
         const OWNER = "lawnornaments", REPO = "notebook", FILE_PATH = "posts.json";
         let diaryEntries = [], fileSha = "";
+
         function checkToken() {
             const savedToken = localStorage.getItem('my_secret_gh_token');
             document.getElementById('token-box').style.display = savedToken ? 'none' : 'block';
         }
+
         function lockTokenInBrowser() {
             const token = document.getElementById('gh-token').value.trim();
             if(token) {
@@ -51,6 +59,7 @@
                 alert("Token saved to this device successfully!");
             }
         }
+
         let clickCount = 0;
         document.getElementById('main-title').addEventListener('click', () => {
             clickCount++;
@@ -61,31 +70,41 @@
                 clickCount = 0;
             }
         });
+
         async function fetchFromGitHub() {
-            const publicUrl = `https://${OWNER}.github.io/${REPO}/${FILE_PATH}?t=${new Date().getTime()}`;
             const apiBackupUrl = `https://github.com{OWNER}/${REPO}/contents/${FILE_PATH}`;
             try {
-                let response = await fetch(publicUrl);
-                if (!response.ok) response = await fetch(apiBackupUrl);
+                const response = await fetch(apiBackupUrl);
+                if (response.status === 404) { return showSetupMessage(); }
                 const data = await response.json();
-                if (data.content && !Array.isArray(data)) {
-                    fileSha = data.sha;
-                    diaryEntries = JSON.parse(atob(data.content.replace(/\s/g, '')));
-                } else {
-                    diaryEntries = data;
-                    const shaCheck = await fetch(apiBackupUrl);
-                    if (shaCheck.ok) { const shaData = await shaCheck.json(); fileSha = shaData.sha; }
+                fileSha = data.sha;
+                
+                if (data.content) {
+                    // Veilige decodeerslag zonder whitespace-crashes
+                    const cleanedContent = data.content.replace(/\s/g, '');
+                    const decodedContent = atob(cleanedContent);
+                    if (decodedContent.trim() === "" || decodedContent.trim() === "[]") {
+                        diaryEntries = [];
+                    } else {
+                        diaryEntries = JSON.parse(decodedContent);
+                    }
                 }
                 renderEntries();
             } catch (e) {
-                document.getElementById('diary-container').textContent = "Your diary is ready! Unlatch the header box above to post your first thought.";
-                diaryEntries = []; renderEntries();
+                showSetupMessage();
             }
         }
+
+        function showSetupMessage() {
+            document.getElementById('diary-container').innerHTML = '<p style="text-align:center;color:#666;font-style:italic;">Your diary is ready! Click the main title 5 times to log in and write your very first post.</p>';
+        }
+
         function renderEntries() {
-            const container = document.getElementById('diary-container'); container.innerHTML = '';
+            const container = document.getElementById('diary-container');
+            container.innerHTML = '';
             if (!diaryEntries || diaryEntries.length === 0) {
-                container.innerHTML = '<p style="text-align:center;color:#888;">No entries found.</p>'; return;
+                showSetupMessage();
+                return;
             }
             diaryEntries.forEach((entry) => {
                 const details = document.createElement('details'), summary = document.createElement('summary'), contentDiv = document.createElement('div');
@@ -93,16 +112,22 @@
                 details.appendChild(summary); details.appendChild(contentDiv); container.appendChild(details);
             });
         }
+
         async function saveToGitHub() {
             const token = localStorage.getItem('my_secret_gh_token') || document.getElementById('gh-token').value.trim();
             const titleInput = document.getElementById('entry-title'), bodyInput = document.getElementById('entry-body'), saveBtn = document.getElementById('save-btn');
             if (!token || !titleInput.value.trim() || !bodyInput.value.trim()) { alert("Missing token or entry contents!"); return; }
-            saveBtn.disabled = true; saveBtn.textContent = "Publishing...";
+            
+            saveBtn.disabled = true; 
+            saveBtn.textContent = "Publishing...";
+            
             const options = { year: 'numeric', month: 'long', day: 'numeric' }, todayStr = new Date().toLocaleDateString('en-US', options);
             const fullTitle = `${todayStr} - ${titleInput.value.trim()}`;
             diaryEntries.unshift({ title: fullTitle, body: bodyInput.value.trim() });
+            
             const url = `https://github.com{OWNER}/${REPO}/contents/${FILE_PATH}`;
             const payload = { message: `New entry: ${titleInput.value.trim()}`, content: btoa(unescape(encodeURIComponent(JSON.stringify(diaryEntries, null, 2)))), sha: fileSha || undefined };
+            
             try {
                 const response = await fetch(url, { method: "PUT", headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }, body: JSON.stringify(payload) });
                 if (response.ok) {
@@ -114,12 +139,17 @@
             } catch (err) { alert("Network error occurred when trying to post to GitHub."); diaryEntries.shift(); }
             saveBtn.disabled = false; saveBtn.textContent = "Publish Online";
         }
+
         function filterEntries() {
             const query = document.getElementById('search-input').value.toLowerCase();
             const elements = document.querySelectorAll('#diary-container details');
             elements.forEach((el, idx) => { if (diaryEntries[idx]) el.style.display = diaryEntries[idx].title.toLowerCase().includes(query) ? "block" : "none"; });
         }
-        fetchFromGitHub();
+
+        // GEBRUIK WINDOW.ONLOAD: Wacht tot de HTML volledig op het scherm staat vóór de database start
+        window.onload = function() {
+            fetchFromGitHub();
+        };
     </script>
 </body>
 </html>
