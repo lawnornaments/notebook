@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Personal Diary</title>
+    <title>My Secure Auto-Diary</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -13,202 +13,200 @@
             background-color: #f9f9f9;
             color: #333;
         }
-        h1 {
-            text-align: center;
-            color: #222;
-        }
-        /* Search Bar Styles */
-        .search-container {
-            margin-bottom: 20px;
-        }
+        h1 { text-align: center; color: #222; }
         .search-bar {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-sizing: border-box;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+            width: 100%; padding: 12px; font-size: 16px;
+            border: 1px solid #ccc; border-radius: 8px;
+            box-sizing: border-box; margin-bottom: 20px;
         }
-        /* Entry Accordion Styles */
         details {
-            background: white;
-            margin-bottom: 15px;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            background: white; margin-bottom: 15px; padding: 15px;
+            border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             border: 1px solid #eee;
-            transition: all 0.2s ease;
         }
-        summary {
-            font-weight: bold;
-            font-size: 1.1em;
-            cursor: pointer;
-            outline: none;
-            user-select: none;
-        }
-        summary:hover {
-            color: #0066cc;
-        }
-        .content {
-            margin-top: 12px;
-            line-height: 1.6;
-            color: #555;
-            white-space: pre-wrap;
-        }
-        /* Admin Write Panel Styles */
+        summary { font-weight: bold; font-size: 1.1em; cursor: pointer; }
+        summary:hover { color: #0066cc; }
+        .content { margin-top: 12px; line-height: 1.6; color: #555; white-space: pre-wrap; }
+        
+        /* The Admin Panel is hidden by default */
         .admin-panel {
-            background: #f0f4f8;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px dashed #b0c4de;
-            margin-bottom: 30px;
-        }
-        .admin-panel h3 {
-            margin-top: 0;
-            color: #444;
+            display: none;
+            background: #f0f4f8; padding: 20px; border-radius: 8px;
+            border: 1px dashed #b0c4de; margin-bottom: 30px;
         }
         .input-field {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 14px;
+            width: 100%; padding: 10px; margin-bottom: 12px;
+            border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;
         }
-        textarea.input-field {
-            height: 120px;
-            resize: vertical;
-            font-family: inherit;
-        }
+        textarea.input-field { height: 120px; resize: vertical; font-family: inherit; }
         .btn {
-            background-color: #0066cc;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
+            background-color: #2ea44f; color: white; border: none;
+            padding: 10px 20px; font-size: 15px; border-radius: 6px;
+            cursor: pointer; font-weight: bold;
         }
-        .btn:hover {
-            background-color: #0052a3;
-        }
-        .no-results {
-            text-align: center;
-            color: #888;
-            margin-top: 20px;
-        }
+        .btn:hover { background-color: #2c974b; }
+        .btn:disabled { background-color: #94d3a2; cursor: not-allowed; }
+        .token-setup { background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 6px; margin-bottom: 12px; }
     </style>
 </head>
 <body>
 
-    <h1>📖 My Diary</h1>
+    <h1 id="main-title">📖 My Public Diary</h1>
 
-    <!-- 1. WRITE NEW ENTRY PANEL -->
-    <div class="admin-panel">
+    <!-- WRITE PANEL (Hidden from strangers, unlocked by you) -->
+    <div id="write-panel" class="admin-panel">
         <h3>✍️ Write a New Entry</h3>
-        <input type="text" id="entry-title" class="input-field" placeholder="Entry Title (e.g., A productive morning, Great dinner...)">
+        
+        <!-- Only shows if token isn't saved yet -->
+        <div id="token-box" class="token-setup">
+            <label style="font-size:12px; font-weight:bold;">First Time Setup: Enter GitHub Token</label>
+            <input type="password" id="gh-token" class="input-field" placeholder="Paste your GitHub Token here...">
+            <button class="btn" style="padding:5px 10px; font-size:12px;" onclick="lockTokenInBrowser()">Save Token Locally</button>
+        </div>
+
+        <input type="text" id="entry-title" class="input-field" placeholder="Entry Title...">
         <textarea id="entry-body" class="input-field" placeholder="Write your thoughts here..."></textarea>
-        <button class="btn" onclick="saveEntry()">Save Entry</button>
+        <button class="btn" id="save-btn" onclick="saveToGitHub()">Publish Online</button>
     </div>
 
-    <!-- 2. SEARCH BAR -->
-    <div class="search-container">
-        <input type="text" id="search-input" class="search-bar" placeholder="🔍 Search diary titles..." oninput="filterEntries()">
-    </div>
+    <!-- SEARCH BAR -->
+    <input type="text" id="search-input" class="search-bar" placeholder="🔍 Search diary titles..." oninput="filterEntries()">
 
-    <!-- 3. DIARY ENTRIES CONTAINER -->
-    <div id="diary-container"></div>
+    <!-- ENTRIES CONTAINER -->
+    <div id="diary-container">Loading entries from GitHub...</div>
 
     <script>
-        // Load existing entries from LocalStorage, or start with default placeholder entries if empty
-        let diaryEntries = JSON.parse(localStorage.getItem('myDiaryEntries')) || [
-            {
-                title: "Welcome to your new digital diary!",
-                body: "This is a sample post. Use the form above to type your first real entry. It will save directly into your browser's memory!"
-            }
-        ];
+        // CONFIGURATION - CHANGE THESE TO YOUR EXACT DETAILS
+        const OWNER = "lawnornaments"; 
+        const REPO = "notebook"; 
+        const FILE_PATH = "posts.json"; 
 
-        // Renders the diary entries onto the screen
+        let diaryEntries = [];
+        let fileSha = ""; 
+
+        // Check if token already exists in your personal browser memory
+        function checkToken() {
+            const savedToken = localStorage.getItem('my_secret_gh_token');
+            if (savedToken) {
+                document.getElementById('token-box').style.display = 'none';
+            }
+        }
+
+        function lockTokenInBrowser() {
+            const token = document.getElementById('gh-token').value.trim();
+            if(token) {
+                localStorage.setItem('my_secret_gh_token', token);
+                document.getElementById('token-box').style.display = 'none';
+                alert("Token saved to this device successfully!");
+            }
+        }
+
+        // SECRET UNLOCK MECHANISM: Click the main title 5 times to show the write panel
+        let clickCount = 0;
+        document.getElementById('main-title').addEventListener('click', () => {
+            clickCount++;
+            if (clickCount === 5) {
+                document.getElementById('write-panel').style.display = 'block';
+                checkToken();
+                alert("Admin panel unlocked!");
+                clickCount = 0;
+            }
+        });
+
+        async function fetchFromGitHub() {
+            const url = `https://github.com{OWNER}/${REPO}/contents/${FILE_PATH}`;
+            try {
+                const response = await fetch(url);
+                if (response.status === 404) {
+                    diaryEntries = [{ title: "Welcome!", body: "Click the main header 5 times to unlock the writing tool." }];
+                    renderEntries();
+                    return;
+                }
+                const data = await response.json();
+                fileSha = data.sha;
+                diaryEntries = JSON.parse(atob(data.content)); 
+                renderEntries();
+            } catch (e) {
+                document.getElementById('diary-container').textContent = "Error loading files.";
+            }
+        }
+
         function renderEntries() {
             const container = document.getElementById('diary-container');
-            container.innerHTML = ''; // Clear existing list
-
-            if (diaryEntries.length === 0) {
-                container.innerHTML = '<p class="no-results">No diary entries found.</p>';
-                return;
-            }
-
-            diaryEntries.forEach((entry, index) => {
+            container.innerHTML = '';
+            diaryEntries.forEach((entry) => {
                 const details = document.createElement('details');
                 const summary = document.createElement('summary');
                 const contentDiv = document.createElement('div');
-
                 summary.textContent = entry.title;
                 contentDiv.className = 'content';
                 contentDiv.textContent = entry.body;
-
                 details.appendChild(summary);
                 details.appendChild(contentDiv);
                 container.appendChild(details);
             });
         }
 
-        // Handles gathering input data, generating timestamps, and saving to browser storage
-        function saveEntry() {
+        async function saveToGitHub() {
+            const token = localStorage.getItem('my_secret_gh_token') || document.getElementById('gh-token').value.trim();
             const titleInput = document.getElementById('entry-title');
             const bodyInput = document.getElementById('entry-body');
+            const saveBtn = document.getElementById('save-btn');
 
-            if (!titleInput.value.trim() || !bodyInput.value.trim()) {
-                alert("Please fill out both the title and content fields!");
+            if (!token || !titleInput.value.trim() || !bodyInput.value.trim()) {
+                alert("Missing token or entry contents!");
                 return;
             }
 
-            // Automatic Date Generator Setup
+            saveBtn.disabled = true;
+            saveBtn.textContent = "Publishing...";
+
             const options = { year: 'numeric', month: 'long', day: 'numeric' };
             const todayStr = new Date().toLocaleDateString('en-US', options);
-            
-            // Format title with the automatic date attached
             const fullTitle = `${todayStr} - ${titleInput.value.trim()}`;
 
-            const newEntry = {
-                title: fullTitle,
-                body: bodyInput.value.trim()
+            diaryEntries.unshift({ title: fullTitle, body: bodyInput.value.trim() });
+
+            const url = `https://github.com{OWNER}/${REPO}/contents/${FILE_PATH}`;
+            const payload = {
+                message: `New entry: ${titleInput.value.trim()}`,
+                content: btoa(unescape(encodeURIComponent(JSON.stringify(diaryEntries, null, 2)))),
+                sha: fileSha || undefined
             };
 
-            // Insert new entry at the very top of the list
-            diaryEntries.unshift(newEntry);
+            const response = await fetch(url, {
+                method: "PUT",
+                headers: {
+                    "Authorization": `token ${token}`,
+                    "Accept": "application/vnd.github.v3+json"
+                },
+                body: JSON.stringify(payload)
+            });
 
-            // Save array securely to browser's LocalStorage memory
-            localStorage.setItem('myDiaryEntries', JSON.stringify(diaryEntries));
-
-            // Reset inputs and refresh screen display
-            titleInput.value = '';
-            bodyInput.value = '';
-            renderEntries();
+            if (response.ok) {
+                alert("Published! Your entry will be live globally in a minute.");
+                titleInput.value = '';
+                bodyInput.value = '';
+                fetchFromGitHub();
+            } else {
+                alert("Publish failed. Your browser token might be incorrect or expired.");
+                diaryEntries.shift();
+                localStorage.removeItem('my_secret_gh_token'); // Clear bad token
+                document.getElementById('token-box').style.display = 'block';
+            }
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Publish Online";
         }
 
-        // Live Search Filtering Functionality
         function filterEntries() {
-            const searchQueries = document.getElementById('search-input').value.toLowerCase();
+            const query = document.getElementById('search-input').value.toLowerCase();
             const elements = document.querySelectorAll('#diary-container details');
-
-            elements.forEach((detailsElement, index) => {
-                const titleText = diaryEntries[index].title.toLowerCase();
-                
-                if (titleText.includes(searchQueries)) {
-                    detailsElement.style.display = "block"; // Show match
-                } else {
-                    detailsElement.style.display = "none";  // Hide non-match
-                }
+            elements.forEach((el, idx) => {
+                el.style.display = diaryEntries[idx].title.toLowerCase().includes(query) ? "block" : "none";
             });
         }
 
-        // Run the rendering sequence instantly upon page load
-        renderEntries();
+        fetchFromGitHub();
     </script>
-
 </body>
 </html>
