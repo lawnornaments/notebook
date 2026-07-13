@@ -1,8 +1,95 @@
-<html>
-  <head>
-    
-  </head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Daily Diary</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #222;
+        }
+        /* Style for each diary entry container */
+        details {
+            background: white;
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #eee;
+        }
+        /* Style for the clickable title */
+        summary {
+            font-weight: bold;
+            font-size: 1.1em;
+            cursor: pointer;
+            outline: none;
+            user-select: none;
+        }
+        summary:hover {
+            color: #0066cc;
+        }
+        /* Style for the hidden text when revealed */
+        .content {
+            margin-top: 12px;
+            line-height: 1.6;
+            color: #555;
+            white-space: pre-wrap; /* Keeps your paragraph breaks */
+        }
+    </style>
+</head>
 <body>
-  notes
+
+    <h1>📖 My Diary</h1>
+
+    <!-- DIARY ENTRIES CONTAINER -->
+    <div id="diary-container"></div>
+
+    <script>
+        // 1. Write your diary entries here (Newest at the top)
+        const diaryEntries = [
+            {
+                title: "July 13, 2026 - A Productive Monday",
+                body: "Today I finally figured out how to set up my GitHub Pages diary! The JavaScript script is incredibly lightweight and easy to update."
+            },
+            {
+                title: "July 12, 2026 - Weekend Walk",
+                body: "Went for a long walk in the park today. The weather was perfect. Reminded me to start writing down my daily thoughts more often."
+            },
+            {
+                title: "July 11, 2026 - Starting the Project",
+                body: "Decided to build a minimalist, distraction-free digital diary. I want something that loads instantly and keeps things clean."
+            }
+        ];
+
+        // 2. JavaScript to automatically render the entries
+        const container = document.getElementById('diary-container');
+
+        diaryEntries.forEach(entry => {
+            // Create the HTML elements natively
+            const details = document.createElement('details');
+            const summary = document.createElement('summary');
+            const contentDiv = document.createElement('div');
+
+            // Add text classes and content
+            summary.textContent = entry.title;
+            contentDiv.className = 'content';
+            contentDiv.textContent = entry.body;
+
+            // Assemble and inject into the page
+            details.appendChild(summary);
+            details.appendChild(contentDiv);
+            container.appendChild(details);
+        });
+    </script>
+
 </body>
 </html>
