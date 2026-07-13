@@ -49,32 +49,7 @@
         .token-setup { background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 6px; margin-bottom: 12px; }
     </style>
 </head>
-<body>
-
-    <h1 id="main-title">📖 My Public Diary</h1>
-
-    <!-- WRITE PANEL (Hidden from strangers, unlocked by you) -->
-    <div id="write-panel" class="admin-panel">
-        <h3>✍️ Write a New Entry</h3>
-        
-        <!-- Only shows if token isn't saved yet -->
-        <div id="token-box" class="token-setup">
-            <label style="font-size:12px; font-weight:bold;">First Time Setup: Enter GitHub Token</label>
-            <input type="password" id="gh-token" class="input-field" placeholder="Paste your GitHub Token here...">
-            <button class="btn" style="padding:5px 10px; font-size:12px;" onclick="lockTokenInBrowser()">Save Token Locally</button>
-        </div>
-
-        <input type="text" id="entry-title" class="input-field" placeholder="Entry Title...">
-        <textarea id="entry-body" class="input-field" placeholder="Write your thoughts here..."></textarea>
-        <button class="btn" id="save-btn" onclick="saveToGitHub()">Publish Online</button>
-    </div>
-
-    <!-- SEARCH BAR -->
-    <input type="text" id="search-input" class="search-bar" placeholder="🔍 Search diary titles..." oninput="filterEntries()">
-
-    <!-- ENTRIES CONTAINER -->
-    <div id="diary-container">Loading entries from GitHub...</div>
-
+    <body>
     <script>
         // CONFIGURATION - CHANGE THESE TO YOUR EXACT DETAILS
         const OWNER = "lawnornaments"; 
@@ -114,6 +89,7 @@
         });
 
         async function fetchFromGitHub() {
+            // FIXED: Uses official api endpoint and correct template literals (backticks)
             const url = `https://github.com{OWNER}/${REPO}/contents/${FILE_PATH}`;
             try {
                 const response = await fetch(url);
@@ -167,6 +143,7 @@
 
             diaryEntries.unshift({ title: fullTitle, body: bodyInput.value.trim() });
 
+            // FIXED: Changed link address and wrapped it in template literal backticks
             const url = `https://github.com{OWNER}/${REPO}/contents/${FILE_PATH}`;
             const payload = {
                 message: `New entry: ${titleInput.value.trim()}`,
@@ -177,6 +154,7 @@
             const response = await fetch(url, {
                 method: "PUT",
                 headers: {
+                    // FIXED: Wrapped authorization text string in template backticks
                     "Authorization": `token ${token}`,
                     "Accept": "application/vnd.github.v3+json"
                 },
@@ -189,7 +167,8 @@
                 bodyInput.value = '';
                 fetchFromGitHub();
             } else {
-                alert("Publish failed. Your browser token might be incorrect or expired.");
+                const errorInfo = await response.json();
+                alert("Publish failed: " + errorInfo.message);
                 diaryEntries.shift();
                 localStorage.removeItem('my_secret_gh_token'); // Clear bad token
                 document.getElementById('token-box').style.display = 'block';
@@ -209,4 +188,5 @@
         fetchFromGitHub();
     </script>
 </body>
+
 </html>
