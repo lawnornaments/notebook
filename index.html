@@ -128,9 +128,10 @@
                 const response = await fetch(url, { 
                     method: "PUT", 
                     headers: { 
-                        // GEWICHTIGE UPDATE: Bearer indeling en content-type declaratie voor CORS bypass
-                        "Authorization": `Bearer ${token}`,
+                        // CRUCIALE HEADERS UPDATE: Voldoet aan de specifieke eisen van GitHub REST API v3
+                        "Authorization": `token ${token}`,
                         "Accept": "application/vnd.github.v3+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
                         "Content-Type": "application/json"
                     }, 
                     body: JSON.stringify(payload) 
