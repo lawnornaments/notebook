@@ -23,7 +23,6 @@
 </head>
 <body>
 
-    <!-- DEZE ELEMENTEN STAAN NU ERALTIJD EN KUNNEN NIET MEER VERDWIJNEN -->
     <h1 id="main-title">📖 My Public Diary</h1>
 
     <div id="write-panel" class="admin-panel">
@@ -39,7 +38,6 @@
     </div>
 
     <input type="text" id="search-input" class="search-bar" placeholder="🔍 Search diary titles..." oninput="filterEntries()">
-    
     <div id="diary-container">Loading entries from GitHub...</div>
 
     <script>
@@ -80,9 +78,7 @@
                 fileSha = data.sha;
                 
                 if (data.content) {
-                    // Veilige decodeerslag zonder whitespace-crashes
-                    const cleanedContent = data.content.replace(/\s/g, '');
-                    const decodedContent = atob(cleanedContent);
+                    const decodedContent = atob(data.content.replace(/\s/g, ''));
                     if (decodedContent.trim() === "" || decodedContent.trim() === "[]") {
                         diaryEntries = [];
                     } else {
@@ -129,7 +125,17 @@
             const payload = { message: `New entry: ${titleInput.value.trim()}`, content: btoa(unescape(encodeURIComponent(JSON.stringify(diaryEntries, null, 2)))), sha: fileSha || undefined };
             
             try {
-                const response = await fetch(url, { method: "PUT", headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }, body: JSON.stringify(payload) });
+                const response = await fetch(url, { 
+                    method: "PUT", 
+                    headers: { 
+                        // GEWICHTIGE UPDATE: Bearer indeling en content-type declaratie voor CORS bypass
+                        "Authorization": `Bearer ${token}`,
+                        "Accept": "application/vnd.github.v3+json",
+                        "Content-Type": "application/json"
+                    }, 
+                    body: JSON.stringify(payload) 
+                });
+
                 if (response.ok) {
                     alert("Published! Your entry will be live globally in a minute."); titleInput.value = ''; bodyInput.value = ''; await fetchFromGitHub();
                 } else {
@@ -146,7 +152,6 @@
             elements.forEach((el, idx) => { if (diaryEntries[idx]) el.style.display = diaryEntries[idx].title.toLowerCase().includes(query) ? "block" : "none"; });
         }
 
-        // GEBRUIK WINDOW.ONLOAD: Wacht tot de HTML volledig op het scherm staat vóór de database start
         window.onload = function() {
             fetchFromGitHub();
         };
