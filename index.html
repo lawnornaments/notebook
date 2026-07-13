@@ -13,7 +13,7 @@
             background-color: #f9f9f9;
             color: #333;
         }
-        h1 { text-align: center; color: #222; }
+        h1 { text-align: center; color: #222; cursor: pointer; user-select: none; }
         .search-bar {
             width: 100%; padding: 12px; font-size: 16px;
             border: 1px solid #ccc; border-radius: 8px;
@@ -49,7 +49,32 @@
         .token-setup { background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 6px; margin-bottom: 12px; }
     </style>
 </head>
-    <body>
+<body>
+
+    <h1 id="main-title">📖 My Public Diary</h1>
+
+    <!-- WRITE PANEL (Hidden from strangers, unlocked by you) -->
+    <div id="write-panel" class="admin-panel">
+        <h3>✍️ Write a New Entry</h3>
+        
+        <!-- Only shows if token isn't saved yet -->
+        <div id="token-box" class="token-setup">
+            <label style="font-size:12px; font-weight:bold;">First Time Setup: Enter GitHub Token</label>
+            <input type="password" id="gh-token" class="input-field" placeholder="Paste your GitHub Token here...">
+            <button class="btn" style="padding:5px 10px; font-size:12px;" onclick="lockTokenInBrowser()">Save Token Locally</button>
+        </div>
+
+        <input type="text" id="entry-title" class="input-field" placeholder="Entry Title...">
+        <textarea id="entry-body" class="input-field" placeholder="Write your thoughts here..."></textarea>
+        <button class="btn" id="save-btn" onclick="saveToGitHub()">Publish Online</button>
+    </div>
+
+    <!-- SEARCH BAR -->
+    <input type="text" id="search-input" class="search-bar" placeholder="🔍 Search diary titles..." oninput="filterEntries()">
+
+    <!-- ENTRIES CONTAINER -->
+    <div id="diary-container">Loading entries from GitHub...</div>
+
     <script>
         // CONFIGURATION - CHANGE THESE TO YOUR EXACT DETAILS
         const OWNER = "lawnornaments"; 
@@ -64,6 +89,8 @@
             const savedToken = localStorage.getItem('my_secret_gh_token');
             if (savedToken) {
                 document.getElementById('token-box').style.display = 'none';
+            } else {
+                document.getElementById('token-box').style.display = 'block';
             }
         }
 
@@ -89,7 +116,6 @@
         });
 
         async function fetchFromGitHub() {
-            // FIXED: Uses official api endpoint and correct template literals (backticks)
             const url = `https://github.com{OWNER}/${REPO}/contents/${FILE_PATH}`;
             try {
                 const response = await fetch(url);
@@ -103,13 +129,19 @@
                 diaryEntries = JSON.parse(atob(data.content)); 
                 renderEntries();
             } catch (e) {
-                document.getElementById('diary-container').textContent = "Error loading files.";
+                document.getElementById('diary-container').textContent = "Error loading files from GitHub.";
             }
         }
 
         function renderEntries() {
             const container = document.getElementById('diary-container');
             container.innerHTML = '';
+            
+            if (diaryEntries.length === 0) {
+                container.innerHTML = '<p style="text-align:center;color:#888;">No entries found.</p>';
+                return;
+            }
+
             diaryEntries.forEach((entry) => {
                 const details = document.createElement('details');
                 const summary = document.createElement('summary');
@@ -143,7 +175,6 @@
 
             diaryEntries.unshift({ title: fullTitle, body: bodyInput.value.trim() });
 
-            // FIXED: Changed link address and wrapped it in template literal backticks
             const url = `https://github.com{OWNER}/${REPO}/contents/${FILE_PATH}`;
             const payload = {
                 message: `New entry: ${titleInput.value.trim()}`,
@@ -151,28 +182,33 @@
                 sha: fileSha || undefined
             };
 
-            const response = await fetch(url, {
-                method: "PUT",
-                headers: {
-                    // FIXED: Wrapped authorization text string in template backticks
-                    "Authorization": `token ${token}`,
-                    "Accept": "application/vnd.github.v3+json"
-                },
-                body: JSON.stringify(payload)
-            });
+            try {
+                const response = await fetch(url, {
+                    method: "PUT",
+                    headers: {
+                        "Authorization": `token ${token}`,
+                        "Accept": "application/vnd.github.v3+json"
+                    },
+                    body: JSON.stringify(payload)
+                });
 
-            if (response.ok) {
-                alert("Published! Your entry will be live globally in a minute.");
-                titleInput.value = '';
-                bodyInput.value = '';
-                fetchFromGitHub();
-            } else {
-                const errorInfo = await response.json();
-                alert("Publish failed: " + errorInfo.message);
+                if (response.ok) {
+                    alert("Published! Your entry will be live globally in a minute.");
+                    titleInput.value = '';
+                    bodyInput.value = '';
+                    await fetchFromGitHub();
+                } else {
+                    const errorInfo = await response.json();
+                    alert("Publish failed: " + errorInfo.message);
+                    diaryEntries.shift();
+                    localStorage.removeItem('my_secret_gh_token'); 
+                    document.getElementById('token-box').style.display = 'block';
+                }
+            } catch (err) {
+                alert("Network error occurred when trying to post to GitHub.");
                 diaryEntries.shift();
-                localStorage.removeItem('my_secret_gh_token'); // Clear bad token
-                document.getElementById('token-box').style.display = 'block';
             }
+            
             saveBtn.disabled = false;
             saveBtn.textContent = "Publish Online";
         }
@@ -181,12 +217,14 @@
             const query = document.getElementById('search-input').value.toLowerCase();
             const elements = document.querySelectorAll('#diary-container details');
             elements.forEach((el, idx) => {
-                el.style.display = diaryEntries[idx].title.toLowerCase().includes(query) ? "block" : "none";
+                if (diaryEntries[idx]) {
+                    el.style.display = diaryEntries[idx].title.toLowerCase().includes(query) ? "block" : "none";
+                }
             });
         }
 
+        // Initialize script call
         fetchFromGitHub();
     </script>
 </body>
-
 </html>
